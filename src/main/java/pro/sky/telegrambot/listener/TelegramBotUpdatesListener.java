@@ -5,16 +5,25 @@ import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.annotation.Schedules;
 import org.springframework.stereotype.Service;
+import pro.sky.telegrambot.model.TelegramBotModel;
+import pro.sky.telegrambot.repository.TelegramBotRepository;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@RequiredArgsConstructor
 @Service
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
@@ -23,10 +32,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     @Autowired
     private TelegramBot telegramBot;
 
+    private final TelegramBotRepository telegramBotRepository;
+
     @PostConstruct
     public void init() {
         telegramBot.setUpdatesListener(this);
     }
+
 
     @Override
     public int process(List<Update> updates) {
@@ -64,10 +76,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
                 String dateTimeMessage = ("Дата: " + date +
                                           "\nВремя: " + time +
-                                          "\nСообщение " + text);
+                                          "\nСообщение: " + text);
 
                 SendMessage message = new SendMessage(chatId, dateTimeMessage);
                 SendResponse response = telegramBot.execute(message);
+                // приводим дату и время к типу LocalDateTime
+                LocalDateTime localDateTime = LocalDateTime.parse(date + " " + time, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+                TelegramBotModel telegramBotModel = new TelegramBotModel(localDateTime, text);
+                telegramBotRepository.save(telegramBotModel);
+
             } else {
                 logger.error("Сообщение не соответствует формату");
                 String error = "Сообщение не соответствует формату";
@@ -76,6 +93,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
         });
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
+    }
+    //Добавляем выполнение данного метода каждую минуту
+    @Scheduled(fixedDelay = 10_000L)
+    public void run() {
+        logger.info(String.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)));
+
+        LocalDateTime localDateTime = LocalDateTime.now();
+
+        telegramBotRepository.existsDateTime(localDateTime);
     }
 
 }
