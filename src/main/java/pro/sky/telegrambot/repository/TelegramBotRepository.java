@@ -11,10 +11,7 @@ public interface TelegramBotRepository extends JpaRepository<TelegramBotModel, L
 
     //List<LocalDateTime> findDateAndTime(LocalDateTime localDateTime);
 
-    @Query(value = "SELECT date_and_time FROM telegram_bot_model", nativeQuery = true)
+    @Query(value = "SELECT EXISTS (SELECT 1 FROM telegram_bot_model WHERE date_and_time = :dateTime)", nativeQuery = true)
     boolean existsDateTime(LocalDateTime dateTime);
-
-
-
 
 }

@@ -39,16 +39,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
         telegramBot.setUpdatesListener(this);
     }
 
-
     @Override
     public int process(List<Update> updates) {
 
         updates.forEach(update -> {
             logger.info("Processing update: {}", update);
-            String messageText = update.message().text();
-            Long chatId = update.message().chat().id();
 
+            String messageText = update.message().text();
             logger.info("Сюда попадает отправляемое сообщение messageText: " + messageText);
+            Long chatId = update.message().chat().id();
             logger.info("Сюда попадает ID чата chatId: " + chatId);
 
             if (messageText.equals("/start")) {
@@ -74,7 +73,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 logger.info("Время: " + time);
                 logger.info("Сообщение: " + text);
 
-                String dateTimeMessage = ("Дата: " + date +
+                String dateTimeMessage = ("Установлено напоминание!" +
+                                          "\nДата: " + date +
                                           "\nВремя: " + time +
                                           "\nСообщение: " + text);
 
@@ -84,24 +84,32 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 LocalDateTime localDateTime = LocalDateTime.parse(date + " " + time, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
                 TelegramBotModel telegramBotModel = new TelegramBotModel(localDateTime, text);
                 telegramBotRepository.save(telegramBotModel);
-
             } else {
                 logger.error("Сообщение не соответствует формату");
                 String error = "Сообщение не соответствует формату";
                 SendResponse response = telegramBot.execute(new SendMessage(chatId, error));
             }
-
         });
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
+
     //Добавляем выполнение данного метода каждую минуту
-    @Scheduled(fixedDelay = 10_000L)
-    public void run() {
+    @Scheduled(cron = "0 0/1 * * * *")
+    public boolean run() {
         logger.info(String.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)));
 
-        LocalDateTime localDateTime = LocalDateTime.now();
+        boolean dateTimeExists = telegramBotRepository.existsDateTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
 
-        telegramBotRepository.existsDateTime(localDateTime);
+        if (dateTimeExists) {
+            SendResponse response = telegramBot.execute(new SendMessage(325729014, "Всё ок"));
+        }
+
+        for (TelegramBotModel telegramBotModel : telegramBotRepository.findAll()) {
+
+            if (telegramBotModel.getDateAndTime().equals(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))) {
+                SendResponse response = telegramBot.execute(new SendMessage(325729014, telegramBotModel.getMessage()));
+            }
+        }
+        return false;
     }
-
 }
