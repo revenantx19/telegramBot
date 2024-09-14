@@ -6,12 +6,15 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.jni.Local;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.Schedules;
 import org.springframework.stereotype.Service;
+import pro.sky.telegrambot.commands.ScheduledClass;
 import pro.sky.telegrambot.model.TelegramBotModel;
 import pro.sky.telegrambot.repository.TelegramBotRepository;
 
@@ -25,6 +28,7 @@ import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
     private Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
@@ -43,73 +47,53 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     public int process(List<Update> updates) {
 
         updates.forEach(update -> {
-            logger.info("Processing update: {}", update);
-
+            log.info("Processing update: {}", update);
+            // ловим отправленное сообщение
             String messageText = update.message().text();
-            logger.info("Сюда попадает отправляемое сообщение messageText: " + messageText);
+            // достаём ID чата с пользователем
             Long chatId = update.message().chat().id();
-            logger.info("Сюда попадает ID чата chatId: " + chatId);
 
             if (messageText.equals("/start")) {
                 // Создаем приветственное сообщение
-                String welcomeMessage = "Здравствуйте! Добро пожаловать в нашего бота. Как я могу помочь вам сегодня?";
+                String welcomeMessage = "Добро пожаловать в нашего бота. Я могу:" +
+                        "\n1. Сохранить для вас напоминание. Для этого отправьте мне сообщение в следующем формате: 14.09.2024 16:33 Текст напоминания" +
+                        "\n2. Начальник ещё не придумал, что я могу ещё сделать.";
                 // Отправляем приветственное сообщение
-                // ChatID нужен для того, чтобы понимать куда будет отправлено сообщение
-                SendMessage message = new SendMessage(chatId, welcomeMessage);
-                SendResponse response = telegramBot.execute(message);
+                // ChatID нужен для того, чтобы понимать в какой чат будет отправлено сообщение
+                telegramBot.execute(new SendMessage(chatId, welcomeMessage));
             }
             // Создаем регулярное вырежение
-            String regex = "(\\d{2}\\.\\d{2}\\.\\d{4})\\s+(\\d{2}:\\d{2})\\s+(.*)";
-            Pattern pattern = Pattern.compile(regex);
-            // Необходим для поиска совпадений в строке и дальнейшего применения метода .find
+            Pattern pattern = Pattern.compile("(\\d{2}\\.\\d{2}\\.\\d{4})\\s+(\\d{2}:\\d{2})\\s+(.*)");
+            // Обрабатываем входящее сообщение. Ищем совпадения в строке и дальнейшего применения метода .find
             Matcher matcher = pattern.matcher(messageText);
             // Проверяем совпадения в регулярном выражении выделенные скобками, всего их 3 шт.
-            if (matcher.find()) {
+            if (matcher.find() ) {
                 String date = matcher.group(1);
                 String time = matcher.group(2);
                 String text = matcher.group(3);
 
-                logger.info("Дата: " + date);
-                logger.info("Время: " + time);
-                logger.info("Сообщение: " + text);
+                log.info("Установлено напоминание: Дата: " + date + ". Время: " + time + ". Сообщение: " + text + ".");
 
-                String dateTimeMessage = ("Установлено напоминание!" +
-                                          "\nДата: " + date +
-                                          "\nВремя: " + time +
-                                          "\nСообщение: " + text);
-
-                SendMessage message = new SendMessage(chatId, dateTimeMessage);
-                SendResponse response = telegramBot.execute(message);
+                SendMessage message = new SendMessage(chatId, "Установлено напоминание!" +
+                        "\nДата: " + date +
+                        "\nВремя: " + time +
+                        "\nСообщение: " + text);
+                // отправляем сообщение в чат, что напоминание установлено
+                telegramBot.execute(message);
                 // приводим дату и время к типу LocalDateTime
                 LocalDateTime localDateTime = LocalDateTime.parse(date + " " + time, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
-                TelegramBotModel telegramBotModel = new TelegramBotModel(localDateTime, text);
-                telegramBotRepository.save(telegramBotModel);
+                // сохранение напоминания в базу данных
+                telegramBotRepository.save(new TelegramBotModel(chatId, localDateTime, text));
             } else {
-                logger.error("Сообщение не соответствует формату");
-                String error = "Сообщение не соответствует формату";
-                SendResponse response = telegramBot.execute(new SendMessage(chatId, error));
+                log.error("Сообщение не соответствует формату");
+                if (messageText.equals("/start")) {
+                    log.info("Введён /start");
+                } else {
+                    telegramBot.execute(new SendMessage(chatId, "Сообщение не соответствует формату"));
+                }
             }
         });
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
 
-    //Добавляем выполнение данного метода каждую минуту
-    @Scheduled(cron = "0 0/1 * * * *")
-    public boolean run() {
-        logger.info(String.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)));
-
-        boolean dateTimeExists = telegramBotRepository.existsDateTime(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES));
-
-        if (dateTimeExists) {
-            SendResponse response = telegramBot.execute(new SendMessage(325729014, "Всё ок"));
-        }
-
-        for (TelegramBotModel telegramBotModel : telegramBotRepository.findAll()) {
-
-            if (telegramBotModel.getDateAndTime().equals(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))) {
-                SendResponse response = telegramBot.execute(new SendMessage(325729014, telegramBotModel.getMessage()));
-            }
-        }
-        return false;
-    }
 }

@@ -11,7 +11,13 @@ public interface TelegramBotRepository extends JpaRepository<TelegramBotModel, L
 
     //List<LocalDateTime> findDateAndTime(LocalDateTime localDateTime);
 
+    // Запрос, который проверяет, имеется ли искомое время в базе напоминаний
     @Query(value = "SELECT EXISTS (SELECT 1 FROM telegram_bot_model WHERE date_and_time = :dateTime)", nativeQuery = true)
     boolean existsDateTime(LocalDateTime dateTime);
+
+    // Запрос, который возвращает объект из базы, если найдено время с напоминанием
+    @Query(value = "SELECT * FROM telegram_bot_model WHERE date_and_time = :value", nativeQuery = true)
+    TelegramBotModel findEqualTimeAndDateNotification(LocalDateTime value);
+
 
 }
