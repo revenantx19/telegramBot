@@ -28,8 +28,6 @@ public class ScheduledClass {
 
     @Scheduled(cron = "0 0/1 * * * *")
     public void run() {
-        // Выводим в лог текущую дату и время
-        log.info(String.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES)));
         // Запоминаем текущую дату и время с точностью до минут
         LocalDateTime dateAndTimeNow = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
         // Берём объект из базы данных, который совпададает с текущим временем
