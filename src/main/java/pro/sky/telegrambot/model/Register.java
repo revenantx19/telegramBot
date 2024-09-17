@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
+import javax.persistence.criteria.CriteriaBuilder;
 
 @Entity
 @Table(name = "register")
@@ -27,6 +28,7 @@ public class Register {
     public Register(Long userId, String usersNick) {
         this.userId = userId;
         this.userNick = usersNick;
+        this.countOfPretty = 0;
     }
 
     public Register() {
