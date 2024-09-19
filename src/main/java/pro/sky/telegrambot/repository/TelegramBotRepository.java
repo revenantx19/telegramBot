@@ -3,6 +3,7 @@ package pro.sky.telegrambot.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import pro.sky.telegrambot.model.Register;
 import pro.sky.telegrambot.model.TelegramBotModel;
 
 import java.time.LocalDateTime;
@@ -20,6 +21,5 @@ public interface TelegramBotRepository extends JpaRepository<TelegramBotModel, L
     // Запрос, который возвращает объект из базы, если найдено время с напоминанием
     @Query(value = "SELECT * FROM telegram_bot_model WHERE date_and_time = :value", nativeQuery = true)
     TelegramBotModel findEqualTimeAndDateNotification(LocalDateTime value);
-
 
 }

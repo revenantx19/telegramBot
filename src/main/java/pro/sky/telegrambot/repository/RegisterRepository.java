@@ -9,6 +9,7 @@ import pro.sky.telegrambot.model.Register;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface RegisterRepository extends JpaRepository<Register, Long> {
@@ -27,5 +28,14 @@ public interface RegisterRepository extends JpaRepository<Register, Long> {
     @Transactional
     @Query(value = "UPDATE register SET count_of_pretty = count_of_pretty + 1 WHERE id = :id", nativeQuery = true)
     void updateCountOfPrettyRandomUser(Long id);
+
+    // Запрос, который достает два столбца и помещает их в лист сортируя по убыванию по стоблцу count_of_pretty
+    @Query(value = "SELECT user_nick, count_of_pretty FROM register ORDER BY count_of_pretty DESC", nativeQuery = true)
+    List<Object[]> findTopPrettyUsers();
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE register SET count_of_pretty = 0", nativeQuery = true)
+    void resetCountOfPretty();
 
 }
