@@ -14,5 +14,6 @@ CREATE TABLE register
     id              BIGINT PRIMARY KEY,
     user_id         BIGINT,
     user_nick       TEXT,
-    count_of_pretty BIGINT
+    count_of_pretty BIGINT,
+    chat_id         BIGINT
 );

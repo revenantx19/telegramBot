@@ -21,10 +21,15 @@ import java.time.temporal.ChronoUnit;
 @Slf4j
 public class ScheduledClass {
 
-    @Autowired
-    private TelegramBotRepository telegramBotRepository;
-    @Autowired
-    private TelegramBot telegramBot;
+
+    private final TelegramBotRepository telegramBotRepository;
+
+    private final TelegramBot telegramBot;
+
+    public ScheduledClass(TelegramBotRepository telegramBotRepository, TelegramBot telegramBot) {
+        this.telegramBotRepository = telegramBotRepository;
+        this.telegramBot = telegramBot;
+    }
 
     @Scheduled(cron = "0 0/1 * * * *")
     public void run() {

@@ -13,7 +13,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 public class Register {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Column(name = "user_id")
@@ -25,10 +25,26 @@ public class Register {
     @Column(name = "count_of_pretty")
     private Integer countOfPretty;
 
-    public Register(Long userId, String usersNick) {
+    @Column(name = "chat_id")
+    private Long chatId;
+
+    @Column(name = "already_roll")
+    private boolean alreadyRoll;
+
+    @Column(name = "percent_roll")
+    private Integer percentRoll;
+
+    @Column(name = "user_real_name")
+    private String userRealName;
+
+    public Register(Long userId, String usersNick, Long chatId, String userRealName) {
         this.userId = userId;
         this.userNick = usersNick;
         this.countOfPretty = 0;
+        this.chatId = chatId;
+        this.alreadyRoll = false;
+        this.percentRoll = null;
+        this.userRealName = userRealName;
     }
 
     public Register() {
