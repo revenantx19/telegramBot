@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - include:
+      file: liquibase/scripts/bot-scripts.sql
+  - include:
+      file: liquibase/scripts/add-column-already-roll.sql
+  - include:
+      file: liquibase/scripts/add-column-percent-roll.sql
+  - include:
+      file: liquibase/scripts/add-column-userrealname.sql
